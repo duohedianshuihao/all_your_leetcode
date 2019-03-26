@@ -1,0 +1,19 @@
+{
+    "Leetcode": {
+        "baseURL": "https://leetcode.com",
+        "loginURL": "/accounts/login/",
+        "submissionURL": "/api/submissions/",
+        "verifyURL": "/api/problems/all/"
+    },
+    "UserInfo": {
+        "login": "login email",
+        "password": "password",
+        "username": "username",
+        "cookies": "cookies"
+    },
+    "Language": {
+        "lang": "language to download",
+        "postfix": "postfix of the language",
+        "download": "path to save code files"
+    }
+}
