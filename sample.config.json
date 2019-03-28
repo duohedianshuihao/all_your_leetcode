@@ -8,8 +8,7 @@
     "UserInfo": {
         "login": "login email",
         "password": "password",
-        "username": "username",
-        "cookies": "cookies"
+        "username": "username"
     },
     "Language": {
         "lang": "language to download",
