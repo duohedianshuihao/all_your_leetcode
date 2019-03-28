@@ -1,13 +1,10 @@
 package main
 
 import (
+	"os"
+
 	"github.com/spf13/viper"
 )
-
-// UserInfo to show the leetcode user information
-type RespData struct {
-	Username string `json:"user_name"`
-}
 
 type SubmissionResp struct {
 	Lastkey      string    `json:"last_key"`
@@ -32,6 +29,18 @@ func check(e error) {
 func loadConfig() {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
+	// viper.SetKeyCaseSensitivity(true)
 	err := viper.ReadInConfig()
 	check(err)
+}
+
+func writeFile(path string, filename string, content string) {
+	os.Chdir(path)
+
+	fd, err := os.Create(filename)
+	check(err)
+	defer fd.Close()
+
+	fd.WriteString(content)
+
 }

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -10,14 +10,15 @@ import (
 )
 
 func leetcodeLogin() []*http.Cookie {
-	userInfo := viper.GetStringMapString("UserInfo")
-	URL := viper.GetStringMapString("Leetcode")
-	loginURL := URL["baseURL"] + URL["loginURL"]
+	userInfo := viper.GetStringMapString("userinfo")
+
+	URL := viper.GetStringMapString("leetcode")
+	loginURL := URL["baseurl"] + URL["loginurl"]
 
 	client := &http.Client{}
-	resp, err := client.Get(URL["baseURL"])
+
+	resp, err := client.Get(URL["baseurl"])
 	check(err)
-	fmt.Println(resp.StatusCode)
 
 	cookies := resp.Cookies()
 
@@ -30,8 +31,11 @@ func leetcodeLogin() []*http.Cookie {
 
 	req, err := http.NewRequest("POST", loginURL, strings.NewReader(data.Encode()))
 	req.Header.Set("referer", loginURL)
-	req.Header.Set("origin", URL["baseURL"])
-	req.AddCookie(cookies[1])
+	req.Header.Set("origin", URL["baseurl"])
+	for _, cookie := range cookies {
+		req.AddCookie(cookie)
+	}
+
 	loginResp, err := client.Do(req)
 	check(err)
 
@@ -40,7 +44,8 @@ func leetcodeLogin() []*http.Cookie {
 	}
 
 	LCookies := loginResp.Cookies()
-	saveCookies(LCookies)
+
+	// writeFile("./", "cookies", resp.Header["Set-Cookie"])
 
 	return LCookies
 
@@ -48,11 +53,12 @@ func leetcodeLogin() []*http.Cookie {
 
 func getCookiesFromFile() []*http.Cookie {
 
-	userInfo := viper.GetStringMapString("UserInfo")
-
-	data := strings.Split(userInfo["cookie"], ";")
+	dat, err := ioutil.ReadFile("cookies")
+	check(err)
+	data := strings.Split(string(dat), ";")
 	cookies := make([]*http.Cookie, len(data))
 	for i, val := range data {
+		val := strings.TrimSpace(val)
 		cookies[i] = &http.Cookie{
 			Name:  strings.Split(val, "=")[0],
 			Value: strings.Split(val, "=")[1],
@@ -60,8 +66,4 @@ func getCookiesFromFile() []*http.Cookie {
 
 	}
 	return cookies
-}
-
-func saveCookies(cookies []*http.Cookie) {
-
 }

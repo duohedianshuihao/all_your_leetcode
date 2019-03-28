@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"strconv"
 	"time"
@@ -14,9 +13,9 @@ import (
 )
 
 func verifyCookies(cookies []*http.Cookie) bool {
-	userInfo := viper.GetStringMapString("UserInfo")
-	URL := viper.GetStringMapString("URL")
-	verifyURL := URL["baseURL"] + URL["verifyURL"]
+	userInfo := viper.GetStringMapString("userinfo")
+	URL := viper.GetStringMapString("leetcode")
+	verifyURL := URL["baseurl"] + URL["verifyurl"]
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", verifyURL, nil)
@@ -27,17 +26,21 @@ func verifyCookies(cookies []*http.Cookie) bool {
 	resp, err := client.Do(req)
 	check(err)
 
-	respData := RespData{}
-	json.NewDecoder(resp.Body).Decode(&respData)
+	var respData map[string]interface{}
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	check(err)
+	errR := json.Unmarshal(bodyBytes, &respData)
+	check(errR)
 
-	return respData.Username != userInfo["username"]
+	return respData["user_name"] == userInfo["username"]
+
 }
 
 func getSubmissions(cookies []*http.Cookie) map[string]Problem {
-	URL := viper.GetStringMapString("URL")
-	language := viper.GetStringMapString("Language")
+	URL := viper.GetStringMapString("url")
+	language := viper.GetStringMapString("language")
 
-	submissionURL := URL["baseURL"] + URL["submissionURL"]
+	submissionURL := URL["baseurl"] + URL["submissionurl"]
 
 	client := &http.Client{Timeout: time.Duration(5 * time.Second)}
 	req, err := http.NewRequest("GET", submissionURL, nil)
@@ -70,11 +73,11 @@ func getSubmissions(cookies []*http.Cookie) map[string]Problem {
 	return acceptMap
 }
 
-func getCode(cookies []*http.Cookie, problem Problem) string {
-	URL := viper.GetStringMapString("URL")
-	language := viper.GetStringMapString("Language")
+func getCode(cookies []*http.Cookie, problem Problem) {
+	URL := viper.GetStringMapString("url")
+	language := viper.GetStringMapString("language")
 
-	targetURL := URL["baseURL"] + problem.URL
+	targetURL := URL["baseurl"] + problem.URL
 
 	client := &http.Client{Timeout: time.Duration(5 * time.Second)}
 	req, err := http.NewRequest("GET", targetURL, nil)
@@ -93,16 +96,7 @@ func getCode(cookies []*http.Cookie, problem Problem) string {
 	role := regexp.MustCompile(`submissionCode: \'(.*)\'`)
 	code, err := strconv.Unquote("\"" + role.FindStringSubmatch(bodyString)[1] + "\"")
 
-	errPath := os.Chdir(language["download"])
-	check(errPath)
-	file, err := os.Create(problem.Title + "." + language["postfix"])
-	check(err)
-
-	defer file.Close()
-
-	file.WriteString(code)
-
-	return code
+	writeFile(language["download"], problem.Title+"."+language["postfix"], code)
 }
 
 func updateProblem(acceptMap map[string]Problem, problemDump []Problem, lang string) {
