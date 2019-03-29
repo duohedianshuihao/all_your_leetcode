@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/spf13/viper"
@@ -37,7 +38,7 @@ func verifyCookies(cookies []*http.Cookie) bool {
 }
 
 func getSubmissions(cookies []*http.Cookie) map[string]Problem {
-	URL := viper.GetStringMapString("url")
+	URL := viper.GetStringMapString("leetcode")
 	language := viper.GetStringMapString("language")
 
 	submissionURL := URL["baseurl"] + URL["submissionurl"]
@@ -73,8 +74,11 @@ func getSubmissions(cookies []*http.Cookie) map[string]Problem {
 	return acceptMap
 }
 
-func getCode(cookies []*http.Cookie, problem Problem) {
-	URL := viper.GetStringMapString("url")
+func getCode(cookies []*http.Cookie, problem Problem, wg *sync.WaitGroup) {
+
+	defer wg.Done()
+
+	URL := viper.GetStringMapString("leetcode")
 	language := viper.GetStringMapString("language")
 
 	targetURL := URL["baseurl"] + problem.URL
@@ -93,8 +97,9 @@ func getCode(cookies []*http.Cookie, problem Problem) {
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	bodyString := string(bodyBytes)
 
-	role := regexp.MustCompile(`submissionCode: \'(.*)\'`)
-	code, err := strconv.Unquote("\"" + role.FindStringSubmatch(bodyString)[1] + "\"")
+	role := regexp.MustCompile(`submissionCode: \'([\s\S]*)\'`)
+	code, err := strconv.Unquote("`" + role.FindStringSubmatch(bodyString)[1] + "`")
+	check(err)
 
 	writeFile(language["download"], problem.Title+"."+language["postfix"], code)
 }
